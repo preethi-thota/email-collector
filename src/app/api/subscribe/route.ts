@@ -14,18 +14,19 @@ export async function POST(request: Request) {
   }
 
   try {
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from('subscriptions')
       .insert({ email })
+      .select()
 
     if (error) throw error
 
-    return NextResponse.json({ message: 'Subscribed successfully' }, { status: 200 })
+    return NextResponse.json({ message: 'Subscribed successfully', data }, { status: 200 })
   } catch (error: any) {
+    console.error('Error inserting email:', error)
     if (error.code === '23505') {
       return NextResponse.json({ error: 'You are already subscribed' }, { status: 400 })
     }
-    console.error('Error inserting email:', error)
-    return NextResponse.json({ error: 'An error occurred' }, { status: 500 })
+    return NextResponse.json({ error: 'An error occurred while subscribing' }, { status: 500 })
   }
 }

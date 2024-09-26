@@ -1,66 +1,69 @@
 'use client'
 
 import { useState } from 'react'
+import Button from "@/components/ui/button"
+import Input from "@/components/ui/input"
 
-export default function EmailForm() {
+export default function NewsletterForm() {
   const [email, setEmail] = useState('')
   const [message, setMessage] = useState('')
+  const [isError, setIsError] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
+    setIsLoading(true)
+    setMessage('')
+    setIsError(false)
+
     try {
       const response = await fetch('/api/subscribe', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email })
       })
+
       const data = await response.json()
-      if (response.ok) {
-        setMessage('Thank you for subscribing!')
-        setEmail('')
-      } else {
-        setMessage(data.error || 'An error occurred. Please try again.')
+
+      if (!response.ok) {
+        throw new Error(data.error || 'An error occurred')
       }
-    } catch (error) {
-      setMessage('An error occurred. Please try again.')
+
+      setMessage(data.message)
+      setEmail('')
+    } catch (err: any) {
+      setIsError(true)
+      setMessage(err.message)
+    } finally {
+      setIsLoading(false)
     }
   }
 
   return (
-    <form onSubmit={handleSubmit} className="mt-8 space-y-6">
-      <input type="hidden" name="remember" defaultValue="true" />
-      <div className="rounded-md shadow-sm -space-y-px">
-        <div>
-          <label htmlFor="email-address" className="sr-only">
-            Email address
-          </label>
-          <input
-            id="email-address"
-            name="email"
-            type="email"
-            autoComplete="email"
-            required
-            className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-            placeholder="Email address"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-          />
-        </div>
-      </div>
-
-      <div>
-        <button
-          type="submit"
-          className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+    <div className="max-w-md mx-auto p-6 bg-white rounded-lg shadow-sm">
+      <h2 className="text-3xl font-bold text-center mb-6">Subscribe to our newsletter</h2>
+      <form onSubmit={handleSubmit}>
+        <Input
+          type="email"
+          placeholder="Email address"
+          value={email}
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)}
+          className="w-full mb-4"
+          required
+        />
+        <Button 
+          type="submit" 
+          className="w-full bg-indigo-600 hover:bg-indigo-700 text-white"
+          disabled={isLoading}
         >
-          Subscribe
-        </button>
-      </div>
+          {isLoading ? 'Subscribing...' : 'Subscribe'}
+        </Button>
+      </form>
       {message && (
-        <div className="mt-2 text-center text-sm text-gray-600">{message}</div>
+        <p className={`mt-4 text-center text-sm ${isError ? 'text-red-600' : 'text-green-600'}`}>
+          {message}
+        </p>
       )}
-    </form>
+    </div>
   )
 }
